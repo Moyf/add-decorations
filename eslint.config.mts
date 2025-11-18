@@ -1,9 +1,12 @@
 import tseslint from 'typescript-eslint';
 import obsidianmd from "eslint-plugin-obsidianmd";
 import globals from "globals";
-import { globalIgnores } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
+import type { Linter } from 'eslint';
 
-export default tseslint.config(
+export default defineConfig([
+	...tseslint.configs.strictTypeChecked as Linter.Config[],
+	...tseslint.configs.stylisticTypeChecked as Linter.Config[],
 	{
 		languageOptions: {
 			globals: {
@@ -21,7 +24,7 @@ export default tseslint.config(
 			},
 		},
 	},
-	...obsidianmd.configs.recommended,
+	...obsidianmd.configs?.['recommended'] as Linter.Config[],
 	globalIgnores([
 		"node_modules",
 		"dist",
@@ -31,4 +34,4 @@ export default tseslint.config(
 		"versions.json",
 		"main.js",
 	]),
-);
+]);
