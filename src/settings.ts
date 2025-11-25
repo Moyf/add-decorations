@@ -1,5 +1,5 @@
 import {App, PluginSettingTab, Setting} from "obsidian";
-import MyPlugin from "./main";
+import DecoratorPlugin from "./main";
 
 export interface MyPluginSettings {
 	mySetting: string;
@@ -10,9 +10,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 }
 
 export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: DecoratorPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: DecoratorPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

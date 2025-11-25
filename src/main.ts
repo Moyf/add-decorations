@@ -1,13 +1,18 @@
 import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import {DEFAULT_SETTINGS, MyPluginSettings as DecoratorPluginSettings, SampleSettingTab} from "./settings";
+import { examplePlugin } from './viewPlugin';
+import { lineHighlighter } from './lineHighlighter';
+import { EmojiWidget } from './emojiWidget';
 
-// Remember to rename these classes and interfaces!
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class DecoratorPlugin extends Plugin {
+	settings: DecoratorPluginSettings;
 
 	async onload() {
 		await this.loadSettings();
+
+		// Register the line highlighter as a CodeMirror editor extension
+		this.registerEditorExtension([lineHighlighter]);
 
 		// This creates an icon in the left ribbon.
 		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
@@ -74,7 +79,7 @@ export default class MyPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<DecoratorPluginSettings>);
 	}
 
 	async saveSettings() {
