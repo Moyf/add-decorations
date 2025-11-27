@@ -44,6 +44,8 @@ class TaskMarkerPlugin implements PluginValue {
     const numberLimit = this.settingsRef.current.displayTaskNumber;
 
     let currentTaskNumber = 0;
+    // 用数组跟踪每个缩进级别的任务完成状态
+    const completedTasksByLevel: boolean[] = [];
 
     // 遍历可见范围
     for (let { from, to } of view.visibleRanges) {
@@ -52,15 +54,34 @@ class TaskMarkerPlugin implements PluginValue {
         from,
         to,
         enter(node) {
-        //   console.log('Visiting node:', node.type.name, node.from, node.to);
+          console.debug('Visiting node:', {
+            name: node.type.name,
+            from: node.from,
+            to: node.to,
+            text: view.state.doc.sliceString(node.from, node.to)
+          });
 
           if (node.type.name.startsWith('HyperMD-header')) {
             // reset task number on new header
             currentTaskNumber = 0;
+            completedTasksByLevel.length = 0; // 清空所有级别状态
           }
 
+          // 处理任务行
           if (node.type.name.includes('HyperMD-task-line')) {
             currentTaskNumber += 1;
+            
+            // 检查任务是否已完成
+            const lineText = view.state.doc.sliceString(node.from, node.to);
+            const isCompleted = lineText.includes('[x]') || lineText.includes('[X]');
+            
+            // 计算缩进级别（通过计算前导空格或制表符）
+            const leadingWhitespace = lineText.match(/^(\s*)/)?.[1] || '';
+            const indentLevel = Math.floor(leadingWhitespace.length / 2); // 假设每级缩进2个空格
+            
+            // 更新当前级别的完成状态，并清除更深层级的状态
+            completedTasksByLevel[indentLevel] = isCompleted;
+            completedTasksByLevel.splice(indentLevel + 1); // 清除更深层级的状态
 
             const rangeFrom: number = node.from;
             const rangeTo: number = node.to;
@@ -68,6 +89,19 @@ class TaskMarkerPlugin implements PluginValue {
             let className = 'task-marker-fade';
             if (currentTaskNumber <= numberLimit) {
               className = `task-marker-highlight task-num-${String(currentTaskNumber)}`;
+            }
+
+            // 检查是否有父级任务已完成（任何更浅的层级）
+            let hasCompletedParent = false;
+            for (let i = 0; i < indentLevel; i++) {
+              if (completedTasksByLevel[i] === true) {
+                hasCompletedParent = true;
+                break;
+              }
+            }
+
+            if (hasCompletedParent) {
+              className += ' completed-task-child';
             }
 
             // 添加高亮装饰
@@ -78,6 +112,35 @@ class TaskMarkerPlugin implements PluginValue {
                 class: className
               })
             );
+          }
+
+          // 处理普通列表项（非任务）
+          if (node.type.name.includes('HyperMD-list-line') && !node.type.name.includes('task')) {
+            const lineText = view.state.doc.sliceString(node.from, node.to);
+            const leadingWhitespace = /^(\s*)/.exec(lineText)?.[1] ?? '';
+            const indentLevel = lineText.startsWith('\t') ? (/^(\t*)/.exec(lineText)?.[1]?.length ?? 0) : Math.floor(leadingWhitespace.length / 2);
+
+            console.debug("普通列表项缩进级别:", indentLevel);
+            console.debug("已完成任务层级状态:", completedTasksByLevel);
+
+            // 检查是否有父级任务已完成（任何更浅的层级）
+            let hasCompletedParent = false;
+            for (let i = 0; i < indentLevel; i++) {
+              if (completedTasksByLevel[i] === true) {
+                hasCompletedParent = true;
+                break;
+              }
+            }
+
+            if (hasCompletedParent) {
+              builder.add(
+                node.from,
+                node.to,
+                Decoration.mark({
+                  class: 'completed-task-child-list'
+                })
+              );
+            }
           }
         },
       });

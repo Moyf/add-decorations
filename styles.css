@@ -7,11 +7,41 @@ If your plugin does not need CSS, delete this file.
 
 */
 
-.task-marker-highlight.task-num-1 {
-    background-color: rgba(255, 223, 186, 0.6);    
+.cm-list-1 .task-marker-highlight.task-num-1  {
+    background-color: rgba(231, 148, 109, 0.336);
+    border-radius: 3px;
 }
+
 
 .task-marker-fade {
     opacity: 0.3;
     filter: blur(3px);
+}
+
+.HyperMD-task-line:hover .task-marker-fade,
+.cm-active .task-marker-fade {
+    opacity: 0.8;
+    filter: none;
+}
+
+/* --- */
+
+/* 已完成任务的子任务样式 */
+.completed-task-child {
+    opacity: 0.6;
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+/* 已完成任务的普通子列表样式 */
+.completed-task-child-list {
+    opacity: 0.5;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* 鼠标悬停时恢复可读性 */
+.completed-task-child:hover,
+.completed-task-child-list:hover {
+    opacity: 0.8;
 }
