@@ -1,3 +1,7 @@
+/* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { syntaxTree } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
 import {
@@ -8,11 +12,10 @@ import {
   PluginValue,
   ViewPlugin,
   ViewUpdate,
-  WidgetType,
 } from '@codemirror/view';
 
 // 获取插件设置
-import { DecoratorPluginSettings } from "../settings";
+import { DecoratorPluginSettings } from '../settings';
 
 
 class TaskMarkerPlugin implements PluginValue {
@@ -50,16 +53,19 @@ class TaskMarkerPlugin implements PluginValue {
     // 遍历可见范围
     for (let { from, to } of view.visibleRanges) {
       // 迭代语法树
-      syntaxTree(view.state).iterate({
+      const tree = syntaxTree(view.state);
+      if (!tree) continue;
+      
+      tree.iterate({
         from,
         to,
         enter(node) {
-          console.debug('Visiting node:', {
-            name: node.type.name,
-            from: node.from,
-            to: node.to,
-            text: view.state.doc.sliceString(node.from, node.to)
-          });
+        //   console.debug('Visiting node:', {
+        //     name: node.type.name,
+        //     from: node.from,
+        //     to: node.to,
+        //     text: view.state.doc.sliceString(node.from, node.to)
+        //   });
 
           if (node.type.name.startsWith('HyperMD-header')) {
             // reset task number on new header
@@ -72,11 +78,11 @@ class TaskMarkerPlugin implements PluginValue {
             currentTaskNumber += 1;
             
             // 检查任务是否已完成
-            const lineText = view.state.doc.sliceString(node.from, node.to);
+            const lineText = view.state.doc.sliceString(node.from as number, node.to as number);
             const isCompleted = lineText.includes('[x]') || lineText.includes('[X]');
             
             // 计算缩进级别（通过计算前导空格或制表符）
-            const leadingWhitespace = lineText.match(/^(\s*)/)?.[1] || '';
+            const leadingWhitespace = /^(\s*)/.exec(lineText)?.[1] ?? '';
             const indentLevel = Math.floor(leadingWhitespace.length / 2); // 假设每级缩进2个空格
             
             // 更新当前级别的完成状态，并清除更深层级的状态
@@ -116,12 +122,12 @@ class TaskMarkerPlugin implements PluginValue {
 
           // 处理普通列表项（非任务）
           if (node.type.name.includes('HyperMD-list-line') && !node.type.name.includes('task')) {
-            const lineText = view.state.doc.sliceString(node.from, node.to);
+            const lineText = view.state.doc.sliceString(node.from as number, node.to as number);
             const leadingWhitespace = /^(\s*)/.exec(lineText)?.[1] ?? '';
             const indentLevel = lineText.startsWith('\t') ? (/^(\t*)/.exec(lineText)?.[1]?.length ?? 0) : Math.floor(leadingWhitespace.length / 2);
 
-            console.debug("普通列表项缩进级别:", indentLevel);
-            console.debug("已完成任务层级状态:", completedTasksByLevel);
+            // console.debug("普通列表项缩进级别:", indentLevel);
+            // console.debug("已完成任务层级状态:", completedTasksByLevel);
 
             // 检查是否有父级任务已完成（任何更浅的层级）
             let hasCompletedParent = false;
@@ -134,8 +140,8 @@ class TaskMarkerPlugin implements PluginValue {
 
             if (hasCompletedParent) {
               builder.add(
-                node.from,
-                node.to,
+                node.from as number,
+                node.to as number,
                 Decoration.mark({
                   class: 'completed-task-child-list'
                 })
