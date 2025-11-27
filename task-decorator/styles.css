@@ -18,10 +18,13 @@ If your plugin does not need CSS, delete this file.
     filter: blur(3px);
 }
 
-.HyperMD-task-line:hover .task-marker-fade,
-.cm-active .task-marker-fade {
-    opacity: 0.8;
-    filter: none;
+.HyperMD-task-line:hover,
+.cm-active {
+    .task-marker-fade,
+    .task-marker-fade-child {
+        opacity: 0.8;
+        filter: none;
+    }
 }
 
 /* --- */
@@ -38,10 +41,4 @@ If your plugin does not need CSS, delete this file.
     opacity: 0.5;
     color: var(--text-muted);
     font-style: italic;
-}
-
-/* 鼠标悬停时恢复可读性 */
-.completed-task-child:hover,
-.completed-task-child-list:hover {
-    opacity: 0.8;
 }
