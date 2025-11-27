@@ -1,7 +1,7 @@
 {
-	"name": "add-decorations",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"name": "task-decorator",
+	"version": "0.1.0",
+	"description": "Add decorations for specific tasks, help you focus.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
