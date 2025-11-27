@@ -1,20 +1,21 @@
-import {App, PluginSettingTab, Setting} from "obsidian";
+import {App, PluginSettingTab, Setting, Workspace} from "obsidian";
 import DecoratorPlugin from "./main";
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface DecoratorPluginSettings {
+	displayTaskNumber: number;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+export const DEFAULT_SETTINGS: DecoratorPluginSettings = {
+	displayTaskNumber: 3
 }
 
-export class SampleSettingTab extends PluginSettingTab {
+export class DecorationSettingTab extends PluginSettingTab {
 	plugin: DecoratorPlugin;
 
 	constructor(app: App, plugin: DecoratorPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+		this.app = app;
 	}
 
 	display(): void {
@@ -23,14 +24,20 @@ export class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc('It\'s a secret')
+			.setName('Display task number')
+			.setDesc('How many tasks to display')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('Enter the number')
+				.setValue(this.plugin.settings.displayTaskNumber.toString())
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
+					const newValue = parseInt(value);
+					if (!isNaN(newValue) && newValue > 0) {
+						this.plugin.settings.displayTaskNumber = newValue;
+						await this.plugin.saveSettings();
+
+						// 重新加载装饰器扩展以应用新设置
+						this.plugin.reloadTaskMarkerExtension();
+					}
 				}));
 	}
 }
