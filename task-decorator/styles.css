@@ -12,6 +12,10 @@ If your plugin does not need CSS, delete this file.
     border-radius: 3px;
 }
 
+.cm-list-1 .task-marker-highlight.task-num-3  {
+    filter: blur(1px);
+}
+
 
 .task-marker-fade {
     opacity: 0.3;

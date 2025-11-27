@@ -68,7 +68,9 @@ export default class DecoratorPlugin extends Plugin {
 				if (leaf.view.getViewType() === 'markdown') {
 					const markdownView = leaf.view as MarkdownView;
 					// 触发编辑器内容变化事件来强制重新计算装饰
-					const editor = markdownView.editor;
+					const editor = markdownView?.editor ?? null;
+					if (!editor) return;
+
 					const cursor = editor.getCursor();
 					const content = editor.getValue();
 					editor.setValue(content);
