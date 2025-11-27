@@ -13,11 +13,9 @@ If your plugin does not need CSS, delete this file.
 }
 
 
-.task-marker-fade,
-.task-marker-fade-child {
+.task-marker-fade {
     opacity: 0.3;
     filter: blur(3px);
-    color: var(--text-muted);
 }
 
 .HyperMD-task-line:hover .task-marker-fade,
@@ -44,8 +42,6 @@ If your plugin does not need CSS, delete this file.
 
 /* 鼠标悬停时恢复可读性 */
 .completed-task-child:hover,
-.completed-task-child-list:hover,
-.task-marker-fade-child:hover {
+.completed-task-child-list:hover {
     opacity: 0.8;
-    filter: none;
 }

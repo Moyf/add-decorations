@@ -49,6 +49,8 @@ class TaskMarkerPlugin implements PluginValue {
     let currentTaskNumber = 0;
     // 用数组跟踪每个缩进级别的任务完成状态
     const completedTasksByLevel: boolean[] = [];
+    // 用数组跟踪每个缩进级别的任务是否为淡化状态
+    const fadedTasksByLevel: boolean[] = [];
 
     // 遍历可见范围
     for (let { from, to } of view.visibleRanges) {
@@ -71,6 +73,7 @@ class TaskMarkerPlugin implements PluginValue {
             // reset task number on new header
             currentTaskNumber = 0;
             completedTasksByLevel.length = 0; // 清空所有级别状态
+            fadedTasksByLevel.length = 0; // 清空淡化状态
           }
 
           // 处理任务行
@@ -88,6 +91,11 @@ class TaskMarkerPlugin implements PluginValue {
             // 更新当前级别的完成状态，并清除更深层级的状态
             completedTasksByLevel[indentLevel] = isCompleted;
             completedTasksByLevel.splice(indentLevel + 1); // 清除更深层级的状态
+            
+            // 判断当前任务是否为淡化状态
+            const isFaded = currentTaskNumber > numberLimit;
+            fadedTasksByLevel[indentLevel] = isFaded;
+            fadedTasksByLevel.splice(indentLevel + 1); // 清除更深层级的淡化状态
 
             const rangeFrom: number = node.from;
             const rangeTo: number = node.to;
@@ -126,8 +134,7 @@ class TaskMarkerPlugin implements PluginValue {
             const leadingWhitespace = /^(\s*)/.exec(lineText)?.[1] ?? '';
             const indentLevel = lineText.startsWith('\t') ? (/^(\t*)/.exec(lineText)?.[1]?.length ?? 0) : Math.floor(leadingWhitespace.length / 2);
 
-            // console.debug("普通列表项缩进级别:", indentLevel);
-            // console.debug("已完成任务层级状态:", completedTasksByLevel);
+            let childClass = '';
 
             // 检查是否有父级任务已完成（任何更浅的层级）
             let hasCompletedParent = false;
@@ -138,12 +145,27 @@ class TaskMarkerPlugin implements PluginValue {
               }
             }
 
+            // 检查是否有父级任务为淡化状态（任何更浅的层级）
+            let hasFadedParent = false;
+            for (let i = 0; i < indentLevel; i++) {
+              if (fadedTasksByLevel[i] === true) {
+                hasFadedParent = true;
+                break;
+              }
+            }
+
             if (hasCompletedParent) {
+              childClass = 'completed-task-child-list';
+            } else if (hasFadedParent) {
+              childClass = 'task-marker-fade-child';
+            }
+
+            if (childClass) {
               builder.add(
                 node.from as number,
                 node.to as number,
                 Decoration.mark({
-                  class: 'completed-task-child-list'
+                  class: childClass
                 })
               );
             }
