@@ -134,7 +134,7 @@ class TaskMarkerPlugin implements PluginValue {
             const leadingWhitespace = /^(\s*)/.exec(lineText)?.[1] ?? '';
             const indentLevel = lineText.startsWith('\t') ? (/^(\t*)/.exec(lineText)?.[1]?.length ?? 0) : Math.floor(leadingWhitespace.length / 2);
 
-            let childClass = '';
+            let childClasses = [];
 
             // 检查是否有父级任务已完成（任何更浅的层级）
             let hasCompletedParent = false;
@@ -155,17 +155,22 @@ class TaskMarkerPlugin implements PluginValue {
             }
 
             if (hasCompletedParent) {
-              childClass = 'completed-task-child-list';
-            } else if (hasFadedParent) {
-              childClass = 'task-marker-fade-child';
+              childClasses.push('completed-task-child-list');
+            } 
+            if (hasFadedParent) {
+              childClasses.push('task-marker-fade-child');
             }
 
-            if (childClass) {
+            const childClassesFinal = childClasses.join(' ');
+
+            // console.log('List item at level', indentLevel, 'hasCompletedParent:', hasCompletedParent, 'hasFadedParent:', hasFadedParent, 'applying classes:', childClassesFinal);
+
+            if (childClasses.length > 0) {
               builder.add(
                 node.from as number,
                 node.to as number,
                 Decoration.mark({
-                  class: childClass
+                  class: childClassesFinal
                 })
               );
             }
