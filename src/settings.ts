@@ -4,11 +4,15 @@ import DecoratorPlugin from "./main";
 export interface DecoratorPluginSettings {
 	displayTaskNumber: number;
 	enableTaskFade: boolean;
+	metadataProperty: string;
+	metadataValue: string | boolean;
 }
 
 export const DEFAULT_SETTINGS: DecoratorPluginSettings = {
 	displayTaskNumber: 3,
-	enableTaskFade: true
+	enableTaskFade: true,
+	metadataProperty: 'show-all-tasks',
+	metadataValue: true
 }
 
 export class DecorationSettingTab extends PluginSettingTab {
@@ -53,6 +57,40 @@ export class DecorationSettingTab extends PluginSettingTab {
 						// 重新加载装饰器扩展以应用新设置
 						this.plugin.reloadTaskMarkerExtension();
 					}
+				}));
+
+		new Setting(containerEl)
+			.setName('Metadata property name')
+			.setDesc('File metadata property that controls task fading (e.g., show-all-tasks)')
+			.addText(text => text
+				.setPlaceholder('show-all-tasks')
+				.setValue(this.plugin.settings.metadataProperty)
+				.onChange(async (value) => {
+					this.plugin.settings.metadataProperty = value || 'show-all-tasks';
+					await this.plugin.saveSettings();
+
+					// 重新加载装饰器扩展以应用新设置
+					this.plugin.reloadTaskMarkerExtension();
+				}));
+
+		new Setting(containerEl)
+			.setName('Metadata property value')
+			.setDesc('Value that disables task fading (can be true/false or any text)')
+			.addText(text => text
+				.setPlaceholder('true')
+				.setValue(String(this.plugin.settings.metadataValue))
+				.onChange(async (value) => {
+					// Convert input to appropriate type
+					if (value === 'true' || value === 'false') {
+						// Convert string to boolean
+						this.plugin.settings.metadataValue = value === 'true';
+					} else {
+						this.plugin.settings.metadataValue = value || 'true';
+					}
+					await this.plugin.saveSettings();
+
+					// 重新加载装饰器扩展以应用新设置
+					this.plugin.reloadTaskMarkerExtension();
 				}));
 
 	}

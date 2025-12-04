@@ -21,9 +21,11 @@ import { DecoratorPluginSettings } from '../settings';
 class TaskMarkerPlugin implements PluginValue {
   decorations: DecorationSet;
   settingsRef: { current: DecoratorPluginSettings };
+  workspace?: any;
 
-  constructor(view: EditorView, settingsRef: { current: DecoratorPluginSettings }) {
+  constructor(view: EditorView, settingsRef: { current: DecoratorPluginSettings }, workspace?: any) {
     this.settingsRef = settingsRef;
+    this.workspace = workspace;
     console.debug('TaskMarkerPlugin initialized with settings, number:', this.settingsRef.current.displayTaskNumber);
     this.decorations = this.buildDecorations(view);
   }
@@ -47,6 +49,30 @@ class TaskMarkerPlugin implements PluginValue {
     const numberLimit = this.settingsRef.current.displayTaskNumber;
     const enableTaskFade = this.settingsRef.current.enableTaskFade;
 
+    // 检查文件元数据是否应该禁用淡化效果
+    let shouldDisableFade = false;
+    try {
+      const activeFile = this.workspace?.activeLeaf?.view?.file;
+      if (activeFile) {
+        const metadata = this.workspace.metadataCache.getFileCache(activeFile);
+        const frontmatter = metadata?.frontmatter;
+
+        const propName = this.settingsRef.current.metadataProperty;
+        const propValue = this.settingsRef.current.metadataValue;
+
+        if (frontmatter && frontmatter[propName] !== undefined) {
+          const fileValue = frontmatter[propName];
+          // 比较值（支持布尔值和字符串）
+          shouldDisableFade = String(fileValue) === String(propValue);
+        }
+      }
+    } catch (error) {
+      console.debug('Error checking file metadata:', error);
+    }
+
+    // 如果元数据指示禁用淡化，则设置实际的 enableTaskFade 为 false
+    const actualEnableTaskFade = enableTaskFade && !shouldDisableFade;
+
     let currentTaskNumber = 0;
     // 用数组跟踪每个缩进级别的任务完成状态
     const completedTasksByLevel: boolean[] = [];
@@ -60,7 +86,7 @@ class TaskMarkerPlugin implements PluginValue {
       // 迭代语法树
       const tree = syntaxTree(view.state);
       if (!tree) continue;
-      
+
       tree.iterate({
         from,
         to,
@@ -102,8 +128,8 @@ class TaskMarkerPlugin implements PluginValue {
             const hasContent = taskContentMatch?.[1] ? taskContentMatch[1].trim().length > 0 : false;
 
 
-            // 判断当前任务是否为淡化状态
-            const isFaded = currentTaskNumber > numberLimit && enableTaskFade;
+            // 判断当前任务是否为淡化状态（使用 actualEnableTaskFade）
+            const isFaded = currentTaskNumber > numberLimit && actualEnableTaskFade;
             fadedTasksByLevel[indentLevel] = isFaded;
             fadedTasksByLevel.splice(indentLevel + 1); // 清除更深层级的淡化状态
 
@@ -122,7 +148,7 @@ class TaskMarkerPlugin implements PluginValue {
             } else if (currentTaskNumber === numberLimit && hasContent) {
               // 最后一个非空任务（在限制内）：特殊高亮
               className = `task-marker-highlight task-num-${String(currentTaskNumber)} task-num-last`;
-            } else if (currentTaskNumber > numberLimit && enableTaskFade) {
+            } else if (currentTaskNumber > numberLimit && actualEnableTaskFade) {
               // 超过限制的任务：模糊
               className = 'task-marker-fade';
             }
@@ -224,11 +250,11 @@ const pluginSpec: PluginSpec<TaskMarkerPlugin> = {
   decorations: (value: TaskMarkerPlugin) => value.decorations,
 };
 
-export function createTaskMarkerPlugin(settingsRef: { current: DecoratorPluginSettings }) {
+export function createTaskMarkerPlugin(settingsRef: { current: DecoratorPluginSettings }, workspace?: any) {
   return ViewPlugin.fromClass(
     class extends TaskMarkerPlugin {
       constructor(view: EditorView) {
-        super(view, settingsRef);
+        super(view, settingsRef, workspace);
       }
     },
     pluginSpec

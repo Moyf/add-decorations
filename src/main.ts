@@ -82,8 +82,8 @@ export default class DecoratorPlugin extends Plugin {
 	loadTaskMarkerExtension() {
 		// 初始化共享设置
 		this.sharedSettings.current = this.settings;
-		// 创建扩展，传递共享设置引用
-		this.taskMarkerExtension = createTaskMarkerPlugin(this.sharedSettings);
+		// 创建扩展，传递共享设置引用和 workspace
+		this.taskMarkerExtension = createTaskMarkerPlugin(this.sharedSettings, this.app.workspace);
 		this.registerEditorExtension([this.taskMarkerExtension]);
 	}
 
