@@ -3,10 +3,12 @@ import DecoratorPlugin from "./main";
 
 export interface DecoratorPluginSettings {
 	displayTaskNumber: number;
+	enableTaskFade: boolean;
 }
 
 export const DEFAULT_SETTINGS: DecoratorPluginSettings = {
-	displayTaskNumber: 3
+	displayTaskNumber: 3,
+	enableTaskFade: true
 }
 
 export class DecorationSettingTab extends PluginSettingTab {
@@ -24,6 +26,19 @@ export class DecorationSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
+			.setName('Enable task fade effect')
+			.setDesc('When enabled, tasks beyond the display limit will be faded')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.enableTaskFade)
+				.onChange(async (value) => {
+					this.plugin.settings.enableTaskFade = value;
+					await this.plugin.saveSettings();
+
+					// 重新加载装饰器扩展以应用新设置
+					this.plugin.reloadTaskMarkerExtension();
+				}));
+				
+		new Setting(containerEl)
 			.setName('Display task number')
 			.setDesc('How many tasks to display')
 			.addText(text => text
@@ -39,5 +54,6 @@ export class DecorationSettingTab extends PluginSettingTab {
 						this.plugin.reloadTaskMarkerExtension();
 					}
 				}));
+
 	}
 }

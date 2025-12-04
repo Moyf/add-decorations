@@ -1,4 +1,4 @@
-import { MarkdownView, Plugin } from 'obsidian';
+import { MarkdownView, Plugin, setIcon } from 'obsidian';
 import { DEFAULT_SETTINGS, DecoratorPluginSettings, DecorationSettingTab } from './settings';
 import { createTaskMarkerPlugin } from './plugins/taskMarkerPlugin';
 
@@ -7,6 +7,8 @@ export default class DecoratorPlugin extends Plugin {
 	private taskMarkerExtension: ReturnType<typeof createTaskMarkerPlugin> | null = null;
 	// 创建一个共享的设置对象，用于在扩展中引用
 	public sharedSettings: { current: DecoratorPluginSettings } = { current: {} as DecoratorPluginSettings };
+	// 状态栏项
+	private statusBarItem: HTMLElement | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -21,12 +23,38 @@ export default class DecoratorPlugin extends Plugin {
 		// 	new Notice('This is a notice!');
 		// });
 
-		// 可选：添加状态栏显示
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText(`Tasks: ${String(this.settings.displayTaskNumber)}`);
+		// 添加状态栏按钮来切换任务模糊效果
+		this.statusBarItem = this.addStatusBarItem();
+		this.updateStatusBarItem();
+
+		// 添加点击事件
+		this.statusBarItem.addEventListener('click', (evt: MouseEvent) => {
+			evt.preventDefault();
+			// 切换 enableTaskFade 设置
+			void (async () => {
+				this.settings.enableTaskFade = !this.settings.enableTaskFade;
+				await this.saveSettings();
+				// 更新状态栏按钮状态
+				this.updateStatusBarItem();
+				// 重新加载装饰器扩展
+				this.reloadTaskMarkerExtension();
+			})();
+		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new DecorationSettingTab(this.app, this));
+
+		// Add command to toggle task fade effect
+		this.addCommand({
+			id: 'toggle-task-fade',
+			name: 'Toggle task fade effect',
+			callback: async () => {
+				this.settings.enableTaskFade = !this.settings.enableTaskFade;
+				await this.saveSettings();
+				this.updateStatusBarItem();
+				this.reloadTaskMarkerExtension();
+			}
+		});
 
 		// 如果需要全局 DOM 事件监听，可以在这里添加
 		// this.registerDomEvent(document, 'click', (evt: MouseEvent) => { ... });
@@ -47,6 +75,8 @@ export default class DecoratorPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		// 更新状态栏按钮以反映设置更改
+		this.updateStatusBarItem();
 	}
 
 	loadTaskMarkerExtension() {
@@ -78,6 +108,33 @@ export default class DecoratorPlugin extends Plugin {
 				}
 			});
 		}, 100);
+	}
+
+	updateStatusBarItem() {
+		if (!this.statusBarItem) return;
+
+		// 清空状态栏项
+		this.statusBarItem.empty();
+
+		// 添加 mod-clickable 类，使状态栏项可点击并正确显示 tooltip
+		this.statusBarItem.addClass('mod-clickable');
+
+		// 根据当前设置状态设置图标
+		const iconEl = this.statusBarItem.createSpan();
+		iconEl.addClass('status-bar-item-icon');
+
+		// 设置 tooltip 显示在上方
+		this.statusBarItem.setAttribute('data-tooltip-position', 'top');
+
+		// 使用 Obsidian 内置的 Lucide 图标
+		// eye 表示查看所有任务（禁用模糊），eye-off 表示启用模糊
+		if (this.settings.enableTaskFade) {
+			setIcon(iconEl, 'eye-off');
+			this.statusBarItem.setAttribute('aria-label', 'Click to view all tasks');
+		} else {
+			setIcon(iconEl, 'eye');
+			this.statusBarItem.setAttribute('aria-label', 'Click to fade tasks beyond limit');
+		}
 	}
 }
 

@@ -42,9 +42,10 @@ class TaskMarkerPlugin implements PluginValue {
   buildDecorations(view: EditorView): DecorationSet {
     // 先创建一个 RangeSetBuilder 来收集装饰
     const builder = new RangeSetBuilder<Decoration>();
-    
-    // 从当前设置获取 numberLimit
+
+    // 从当前设置获取 numberLimit 和 enableTaskFade
     const numberLimit = this.settingsRef.current.displayTaskNumber;
+    const enableTaskFade = this.settingsRef.current.enableTaskFade;
 
     let currentTaskNumber = 0;
     // 用数组跟踪每个缩进级别的任务完成状态
@@ -93,16 +94,18 @@ class TaskMarkerPlugin implements PluginValue {
             completedTasksByLevel.splice(indentLevel + 1); // 清除更深层级的状态
             
             // 判断当前任务是否为淡化状态
-            const isFaded = currentTaskNumber > numberLimit;
+            const isFaded = currentTaskNumber > numberLimit && enableTaskFade;
             fadedTasksByLevel[indentLevel] = isFaded;
             fadedTasksByLevel.splice(indentLevel + 1); // 清除更深层级的淡化状态
 
             const rangeFrom: number = node.from;
             const rangeTo: number = node.to;
 
-            let className = 'task-marker-fade';
+            let className = '';
             if (currentTaskNumber <= numberLimit) {
               className = `task-marker-highlight task-num-${String(currentTaskNumber)}`;
+            } else if (enableTaskFade) {
+              className = 'task-marker-fade';
             }
 
             // 检查是否有父级任务已完成（任何更浅的层级）
@@ -118,14 +121,16 @@ class TaskMarkerPlugin implements PluginValue {
               className += ' completed-task-child';
             }
 
-            // 添加高亮装饰
-            builder.add(
-              rangeFrom,
-              rangeTo,
-              Decoration.mark({
-                class: className
-              })
-            );
+            // 仅当有样式类时才添加高亮装饰
+            if (className) {
+              builder.add(
+                rangeFrom,
+                rangeTo,
+                Decoration.mark({
+                  class: className
+                })
+              );
+            }
           }
 
           // 处理普通列表项（非任务）
