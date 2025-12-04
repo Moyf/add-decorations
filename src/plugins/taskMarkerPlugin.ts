@@ -1,7 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { syntaxTree } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
 import {
@@ -13,6 +9,8 @@ import {
   ViewPlugin,
   ViewUpdate,
 } from '@codemirror/view';
+import type { App } from 'obsidian';
+import { MarkdownView } from 'obsidian';
 
 // 获取插件设置
 import { DecoratorPluginSettings } from '../settings';
@@ -21,11 +19,11 @@ import { DecoratorPluginSettings } from '../settings';
 class TaskMarkerPlugin implements PluginValue {
   decorations: DecorationSet;
   settingsRef: { current: DecoratorPluginSettings };
-  workspace?: any;
+  app?: App;
 
-  constructor(view: EditorView, settingsRef: { current: DecoratorPluginSettings }, workspace?: any) {
+  constructor(view: EditorView, settingsRef: { current: DecoratorPluginSettings }, app?: App) {
     this.settingsRef = settingsRef;
-    this.workspace = workspace;
+    this.app = app;
     console.debug('TaskMarkerPlugin initialized with settings, number:', this.settingsRef.current.displayTaskNumber);
     this.decorations = this.buildDecorations(view);
   }
@@ -49,29 +47,44 @@ class TaskMarkerPlugin implements PluginValue {
     const numberLimit = this.settingsRef.current.displayTaskNumber;
     const enableTaskFade = this.settingsRef.current.enableTaskFade;
 
-    // 检查文件元数据是否应该禁用淡化效果
-    let shouldDisableFade = false;
+    // 检查文件元数据是否应该显示所有任务（禁用模糊效果）
+    let shouldShowAllTasks = false;
     try {
-      const activeFile = this.workspace?.activeLeaf?.view?.file;
-      if (activeFile) {
-        const metadata = this.workspace.metadataCache.getFileCache(activeFile);
-        const frontmatter = metadata?.frontmatter;
+      if (this.app) {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        const activeFile = activeView?.file;
 
-        const propName = this.settingsRef.current.metadataProperty;
-        const propValue = this.settingsRef.current.metadataValue;
+        if (activeFile) {
+          const metadata = this.app.metadataCache.getFileCache(activeFile);
+          const frontmatter = metadata?.frontmatter;
 
-        if (frontmatter && frontmatter[propName] !== undefined) {
-          const fileValue = frontmatter[propName];
-          // 比较值（支持布尔值和字符串）
-          shouldDisableFade = String(fileValue) === String(propValue);
+          const propName: string = this.settingsRef.current.metadataProperty;
+          const propValue: string | boolean = this.settingsRef.current.metadataValue;
+
+          if (frontmatter && frontmatter[propName] !== undefined) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            const fileValue = frontmatter[propName];
+
+            console.debug('Checking file metadata for property:', propName, 'with value:', fileValue);
+            // 检查是否为数组（列表）
+            if (Array.isArray(fileValue)) {
+              // 如果是列表，检查是否包含设置的值
+              shouldShowAllTasks = fileValue.some((item: unknown) => String(item) === String(propValue));
+            } else {
+              // 如果是单个值，直接比较
+              shouldShowAllTasks = String(fileValue) === String(propValue);
+            }
+
+            console.debug('Should show all tasks based on metadata:', shouldShowAllTasks);
+          }
         }
       }
     } catch (error) {
       console.debug('Error checking file metadata:', error);
     }
 
-    // 如果元数据指示禁用淡化，则设置实际的 enableTaskFade 为 false
-    const actualEnableTaskFade = enableTaskFade && !shouldDisableFade;
+    // 如果元数据指示显示所有任务，则禁用淡化效果
+    const actualEnableTaskFade = enableTaskFade && !shouldShowAllTasks;
 
     let currentTaskNumber = 0;
     // 用数组跟踪每个缩进级别的任务完成状态
@@ -250,11 +263,11 @@ const pluginSpec: PluginSpec<TaskMarkerPlugin> = {
   decorations: (value: TaskMarkerPlugin) => value.decorations,
 };
 
-export function createTaskMarkerPlugin(settingsRef: { current: DecoratorPluginSettings }, workspace?: any) {
+export function createTaskMarkerPlugin(settingsRef: { current: DecoratorPluginSettings }, app?: App) {
   return ViewPlugin.fromClass(
     class extends TaskMarkerPlugin {
       constructor(view: EditorView) {
-        super(view, settingsRef, workspace);
+        super(view, settingsRef, app ?? undefined);
       }
     },
     pluginSpec

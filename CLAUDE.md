@@ -3,6 +3,8 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 - 这是一款 Obsidian 插件，请遵循 @Agents.md 文件中的开发规范
+- 另外，参考 @ref/Plugin guidelines - Developer Documentation.md 中的插件开发指南
+- 以及参考 @ref/Developer policies - Developer Documentation.md 中的开发者政策
 
 ## Project Overview
 

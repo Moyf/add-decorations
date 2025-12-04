@@ -47,7 +47,7 @@ export default class DecoratorPlugin extends Plugin {
 		// Add command to toggle task fade effect
 		this.addCommand({
 			id: 'toggle-task-fade',
-			name: 'Toggle task fade effect',
+			name: 'Toggle show all tasks',
 			callback: async () => {
 				this.settings.enableTaskFade = !this.settings.enableTaskFade;
 				await this.saveSettings();
@@ -55,6 +55,20 @@ export default class DecoratorPlugin extends Plugin {
 				this.reloadTaskMarkerExtension();
 			}
 		});
+
+		// Listen for metadata changes to update decorations when frontmatter changes
+		this.registerEvent(
+			this.app.metadataCache.on('changed', (file) => {
+				const cache = this.app.metadataCache.getFileCache(file);
+				const frontmatter = cache?.frontmatter;
+
+				// Check if the changed file has the property we're monitoring
+				if (frontmatter && this.settings.metadataProperty in frontmatter) {
+					// Trigger a refresh of the task marker extension
+					this.reloadTaskMarkerExtension();
+				}
+			})
+		);
 
 		// 如果需要全局 DOM 事件监听，可以在这里添加
 		// this.registerDomEvent(document, 'click', (evt: MouseEvent) => { ... });
@@ -82,8 +96,8 @@ export default class DecoratorPlugin extends Plugin {
 	loadTaskMarkerExtension() {
 		// 初始化共享设置
 		this.sharedSettings.current = this.settings;
-		// 创建扩展，传递共享设置引用和 workspace
-		this.taskMarkerExtension = createTaskMarkerPlugin(this.sharedSettings, this.app.workspace);
+		// 创建扩展，传递共享设置引用和 app
+		this.taskMarkerExtension = createTaskMarkerPlugin(this.sharedSettings, this.app);
 		this.registerEditorExtension([this.taskMarkerExtension]);
 	}
 
@@ -127,13 +141,13 @@ export default class DecoratorPlugin extends Plugin {
 		this.statusBarItem.setAttribute('data-tooltip-position', 'top');
 
 		// 使用 Obsidian 内置的 Lucide 图标
-		// eye 表示查看所有任务（禁用模糊），eye-off 表示启用模糊
+		// eye-off 表示任务被模糊，eye 表示显示所有任务
 		if (this.settings.enableTaskFade) {
 			setIcon(iconEl, 'eye-off');
-			this.statusBarItem.setAttribute('aria-label', 'Click to view all tasks');
+			this.statusBarItem.setAttribute('aria-label', 'Tasks are being faded beyond limit. Click to show all tasks');
 		} else {
 			setIcon(iconEl, 'eye');
-			this.statusBarItem.setAttribute('aria-label', 'Click to fade tasks beyond limit');
+			this.statusBarItem.setAttribute('aria-label', 'Showing all tasks. Click to fade tasks beyond limit');
 		}
 	}
 }
