@@ -1,0 +1,56 @@
+/* Task Decorator CSS */
+
+/* 第一个任务的增强 */
+.cm-list-1:not(.cm-formatting) .task-marker-highlight.task-num-1  {
+    background-color: rgba(231, 148, 109, 0.336);
+    /* color: var(--color-accent); */
+    border-radius: 3px;
+    padding-right: 3px;
+}
+
+/* 最后一项任务额外变淡 */
+.cm-list-1 .task-marker-highlight.task-num-last  {
+    opacity: 0.6;
+}
+
+/* 最后一项任务的子列表样式 */
+.task-num-last-child {
+    opacity: 0.7;
+}
+
+.task-marker-fade,
+.task-marker-fade-child {
+    opacity: 0.3;
+    filter: blur(3px);
+    color: var(--text-muted);
+}
+
+.HyperMD-task-line:hover .task-marker-fade,
+.cm-active .task-marker-fade {
+    opacity: 0.8;
+    filter: none;
+}
+
+/* --- */
+
+/* 已完成任务的子任务样式 */
+.completed-task-child {
+    opacity: 0.6;
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+/* 已完成任务的普通子列表样式 */
+.completed-task-child-list {
+    opacity: 0.5;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* 鼠标悬停时恢复可读性 */
+.completed-task-child:hover,
+.completed-task-child-list:hover,
+.task-marker-fade-child:hover {
+    opacity: 0.8;
+    filter: none;
+}

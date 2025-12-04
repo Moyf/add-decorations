@@ -1,6 +1,41 @@
 import esbuild from "esbuild";
 import process from "process";
 import { builtinModules } from 'node:module';
+import fs from 'fs/promises';
+import path from 'path';
+
+// Function to copy files to dist folder
+async function copyToDist() {
+	const distDir = 'dist';
+	const filesToCopy = ['main.js', 'manifest.json', 'styles.css'];
+
+	try {
+		// Create dist folder if it doesn't exist
+		await fs.mkdir(distDir, { recursive: true });
+
+		// Copy each file
+		for (const file of filesToCopy) {
+			const sourcePath = file;
+			const destPath = path.join(distDir, file);
+
+			try {
+				await fs.copyFile(sourcePath, destPath);
+				console.log(`✓ Copied ${file} to ${distDir}/`);
+			} catch (error) {
+				if (error.code === 'ENOENT') {
+					console.log(`⚠ Skipped ${file} - not found`);
+				} else {
+					throw error;
+				}
+			}
+		}
+
+		console.log('\\nBuild complete! Files copied to dist folder.');
+	} catch (error) {
+		console.error('Error copying files to dist:', error);
+		throw error;
+	}
+}
 
 const banner =
 `/*
@@ -43,6 +78,7 @@ const context = await esbuild.context({
 
 if (prod) {
 	await context.rebuild();
+	await copyToDist();
 	process.exit(0);
 } else {
 	await context.watch();
