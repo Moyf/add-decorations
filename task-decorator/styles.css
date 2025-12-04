@@ -5,17 +5,18 @@
     background-color: rgba(231, 148, 109, 0.336);
     /* color: var(--color-accent); */
     border-radius: 3px;
+    padding-right: 1px;
 }
 
 
-/* 第2个任务的额外变淡 */
-.cm-list-1 .task-marker-highlight.task-num-3  {
-    opacity: 0.8;
-}
-
-/* 第三个任务（其实应该是最后一个任务）的额外变淡 */
-.cm-list-1 .task-marker-highlight.task-num-3  {
+/* 最后一项任务额外变淡 */
+.cm-list-1 .task-marker-highlight.task-num-last  {
     opacity: 0.6;
+}
+
+/* 最后一项任务的子列表样式 */
+.task-num-last-child {
+    opacity: 0.7;
 }
 
 /* 减淡的任务 */

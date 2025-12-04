@@ -1,17 +1,22 @@
-/*
+/* Task Decorator CSS */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
-
-.cm-list-1 .task-marker-highlight.task-num-1  {
+/* 第一个任务的增强 */
+.cm-list-1:not(.cm-formatting) .task-marker-highlight.task-num-1  {
     background-color: rgba(231, 148, 109, 0.336);
+    /* color: var(--color-accent); */
     border-radius: 3px;
+    padding-right: 3px;
 }
 
+/* 最后一项任务额外变淡 */
+.cm-list-1 .task-marker-highlight.task-num-last  {
+    opacity: 0.6;
+}
+
+/* 最后一项任务的子列表样式 */
+.task-num-last-child {
+    opacity: 0.7;
+}
 
 .task-marker-fade,
 .task-marker-fade-child {

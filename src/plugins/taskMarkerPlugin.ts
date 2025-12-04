@@ -52,6 +52,8 @@ class TaskMarkerPlugin implements PluginValue {
     const completedTasksByLevel: boolean[] = [];
     // 用数组跟踪每个缩进级别的任务是否为淡化状态
     const fadedTasksByLevel: boolean[] = [];
+    // 用数组跟踪每个缩进级别的任务是否为最后一项任务
+    const lastTasksByLevel: boolean[] = [];
 
     // 遍历可见范围
     for (let { from, to } of view.visibleRanges) {
@@ -75,6 +77,7 @@ class TaskMarkerPlugin implements PluginValue {
             currentTaskNumber = 0;
             completedTasksByLevel.length = 0; // 清空所有级别状态
             fadedTasksByLevel.length = 0; // 清空淡化状态
+            lastTasksByLevel.length = 0; // 清空最后一项任务状态
           }
 
           // 处理任务行
@@ -93,18 +96,34 @@ class TaskMarkerPlugin implements PluginValue {
             completedTasksByLevel[indentLevel] = isCompleted;
             completedTasksByLevel.splice(indentLevel + 1); // 清除更深层级的状态
             
+            // 检查任务内容是否为空（只有任务标记，没有实际内容）
+            const taskRegex = /^\s*-\s+\[[xX\s]\]\s*(.*)$/;
+            const taskContentMatch = taskRegex.exec(lineText);
+            const hasContent = taskContentMatch?.[1] ? taskContentMatch[1].trim().length > 0 : false;
+
+
             // 判断当前任务是否为淡化状态
             const isFaded = currentTaskNumber > numberLimit && enableTaskFade;
             fadedTasksByLevel[indentLevel] = isFaded;
             fadedTasksByLevel.splice(indentLevel + 1); // 清除更深层级的淡化状态
 
+            // 判断当前任务是否为最后一项任务（在限制内）
+            const isLastTask = currentTaskNumber === numberLimit && hasContent;
+            lastTasksByLevel[indentLevel] = isLastTask;
+            lastTasksByLevel.splice(indentLevel + 1); // 清除更深层级的状态
+
             const rangeFrom: number = node.from;
             const rangeTo: number = node.to;
 
             let className = '';
-            if (currentTaskNumber <= numberLimit) {
+            if (currentTaskNumber < numberLimit && hasContent) {
+              // 前 N-1 个非空任务：正常高亮
               className = `task-marker-highlight task-num-${String(currentTaskNumber)}`;
-            } else if (enableTaskFade) {
+            } else if (currentTaskNumber === numberLimit && hasContent) {
+              // 最后一个非空任务（在限制内）：特殊高亮
+              className = `task-marker-highlight task-num-${String(currentTaskNumber)} task-num-last`;
+            } else if (currentTaskNumber > numberLimit && enableTaskFade) {
+              // 超过限制的任务：模糊
               className = 'task-marker-fade';
             }
 
@@ -136,6 +155,7 @@ class TaskMarkerPlugin implements PluginValue {
           // 处理普通列表项（非任务）
           if (node.type.name.includes('HyperMD-list-line') && !node.type.name.includes('task')) {
             const lineText = view.state.doc.sliceString(node.from as number, node.to as number);
+
             const leadingWhitespace = /^(\s*)/.exec(lineText)?.[1] ?? '';
             const indentLevel = lineText.startsWith('\t') ? (/^(\t*)/.exec(lineText)?.[1]?.length ?? 0) : Math.floor(leadingWhitespace.length / 2);
 
@@ -159,11 +179,23 @@ class TaskMarkerPlugin implements PluginValue {
               }
             }
 
+            // 检查是否有父级任务为最后一项任务（任何更浅的层级）
+            let hasLastTaskParent = false;
+            for (let i = 0; i < indentLevel; i++) {
+              if (lastTasksByLevel[i] === true) {
+                hasLastTaskParent = true;
+                break;
+              }
+            }
+
             if (hasCompletedParent) {
               childClasses.push('completed-task-child-list');
-            } 
+            }
             if (hasFadedParent) {
               childClasses.push('task-marker-fade-child');
+            }
+            if (hasLastTaskParent) {
+              childClasses.push('task-num-last-child');
             }
 
             const childClassesFinal = childClasses.join(' ');
